@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REMALL</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-family: 'Space Mono', monospace;
+    background: #0a0a0a;
+    overflow: hidden;
+  }
+
+  /* ══════════════════════════════
+     BACKGROUND
+  ══════════════════════════════ */
+  .bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bg-wall {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(60,40,40,0.4) 60px),
+      repeating-linear-gradient(90deg, transparent, transparent 89px, rgba(60,40,40,0.25) 90px);
+    background-color: #1c1614;
+  }
+
+  /* Paint stains / splotches */
+  .bg-paint {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 300px 200px at 10% 30%, rgba(200,30,0,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 250px 350px at 85% 70%, rgba(255,140,0,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 200px at 50% 10%, rgba(30,100,220,0.1) 0%, transparent 70%),
+      radial-gradient(ellipse 200px 300px at 20% 85%, rgba(0,180,100,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 300px 150px at 90% 15%, rgba(220,0,100,0.1) 0%, transparent 70%);
+  }
+
+  .bg-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    filter: blur(3px) brightness(0.5);
+  }
+
+  .bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(8,6,6,0.55);
+    backdrop-filter: blur(1.5px);
+  }
+
+  /* ══════════════════════════════
+     CARD WRAPPER (scroll container)
+  ══════════════════════════════ */
+  .card-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 390px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    transform: rotate(-0.5deg);
+    box-shadow: 0 12px 70px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  /* Sticky header stays on top */
+  .card-sticky {
+    background: rgba(14,12,12,0.97);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Scrollable body */
+  .card-scroll {
+    overflow-y: auto;
+    background: rgba(14,12,12,0.95);
+    flex: 1;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #cc0000 #1a1a1a;
+  }
+
+  .card-scroll::-webkit-scrollbar { width: 4px; }
+  .card-scroll::-webkit-scrollbar-track { background: #111; }
+  .card-scroll::-webkit-scrollbar-thumb { background: #cc0000; }
+
+  /* scroll hint arrow */
+  .scroll-hint {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 36px;
+    background: linear-gradient(to top, rgba(14,12,12,0.97), transparent);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    pointer-events: none;
+    z-index: 3;
+    animation: fade-hint 3s ease-in-out infinite;
+  }
+
+  @keyframes fade-hint {
+    0%,100% { opacity:0.7; }
+    50% { opacity:0.2; }
+  }
+
+  .scroll-hint span {
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 2px;
+    animation: bounce 1.5s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+  }
+
+  /* ══════════════════════════════
+     TAPE
+  ══════════════════════════════ */
+  .tape {
+    height: 7px;
+    background: repeating-linear-gradient(-45deg, #cc0000, #cc0000 10px, #880000 10px, #880000 20px);
+  }
+
+  /* ══════════════════════════════
+     HEADER
+  ══════════════════════════════ */
+  .header {
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Diagonal stripe accent behind header */
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -20px; right: -30px;
+    width: 120px; height: 140px;
+    background: repeating-linear-gradient(-55deg,
+      transparent, transparent 6px,
+      rgba(204,0,0,0.08) 6px, rgba(204,0,0,0.08) 12px);
+    pointer-events: none;
+  }
+
+  .stamp {
+    position: absolute;
+    top: 16px; right: 18px;
+    width: 50px; height: 50px;
+    border: 2.5px solid #cc0000;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(15deg);
+    opacity: 0.8;
+  }
+
+  .stamp-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 10px;
+    color: #cc0000; text-align: center;
+    letter-spacing: 1px; line-height: 1.2;
+  }
+
+  .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 50px;
+    color: #f0f0f0; letter-spacing: 6px; line-height: 1;
+    text-shadow: 3px 3px 0 #cc0000;
+  }
+
+  .sub {
+    font-size: 8px; color: #888; letter-spacing: 3px; margin-top: 5px;
+  }
+
+  /* ══════════════════════════════
+     URGENCY BANNER
+  ══════════════════════════════ */
+  .urgency {
+    background: #cc0000;
+    padding: 7px 22px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .urgency-text {
+    font-size: 8px; font-weight: 700; color: #fff; letter-spacing: 2px;
+  }
+
+  .urgency-dot {
+    width: 6px; height: 6px;
+    background: #fff; border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:0.3; transform:scale(0.6); }
+  }
+
+  /* ══════════════════════════════
+     DIVIDER
+  ══════════════════════════════ */
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 22px 0;
+  }
+
+  .divider-label {
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 4px; color: #cc0000; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .divider-label::before { content: '▶'; font-size: 7px; }
+
+  .divider-line {
+    flex: 1; border-top: 1px dashed rgba(255,255,255,0.1);
+  }
+
+  /* ══════════════════════════════
+     SECTION / PRODUCTS
+  ══════════════════════════════ */
+  .section {
+    padding: 10px 22px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .product {
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+  }
+
+  .product::before {
+    content: '';
+    position: absolute;
+    left: -22px; top: 0; bottom: 0;
+    width: 3px;
+    background: transparent;
+    transition: background 0.2s;
+  }
+
+  .product:hover::before { background: #cc0000; }
+  .product:last-child { border-bottom: none; padding-bottom: 0; }
+  .product:first-child { padding-top: 0; }
+
+  .prod-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 5px; gap: 12px;
+  }
+
+  .prod-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 17px;
+    letter-spacing: 1.5px; color: #f0f0f0;
+  }
+
+  .price-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; font-weight: 700; color: #fff;
+    background: #cc0000; padding: 3px 9px;
+    letter-spacing: 1px; white-space: nowrap; flex-shrink: 0;
+  }
+
+  .prod-desc {
+    font-size: 10px; color: #aaa; line-height: 1.7;
+  }
+
+  .prod-tags {
+    margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 8px; color: #666; border: 1px solid #2a2a2a;
+    padding: 2px 7px; letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .coming-badge {
+    display: inline-block; font-size: 8px;
+    border: 1px dashed #444; color: #666;
+    padding: 2px 6px; letter-spacing: 2px;
+    margin-left: 8px; vertical-align: middle;
+  }
+
+  /* ══════════════════════════════
+     STATS ROW
+  ══════════════════════════════ */
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .stat {
+    padding: 12px 0; text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 24px; color: #cc0000;
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 8px; color: #666; letter-spacing: 2px; margin-top: 3px;
+  }
+
+  /* ══════════════════════════════
+     TESTIMONIALS
+  ══════════════════════════════ */
+  .testi-section {
+    padding: 14px 22px;
+    background: rgba(255,255,255,0.015);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .testi-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+
+  .testi-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.02);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .testi-item::before {
+    content: '"';
+    position: absolute; top: -4px; right: 10px;
+    font-size: 40px; color: rgba(204,0,0,0.1);
+    font-family: Georgia, serif; font-weight: 700;
+    line-height: 1;
+  }
+
+  .testi-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%; background: #1e1e1e;
+    border: 1px solid #333;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+
+  .testi-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 13px;
+    color: #ddd; letter-spacing: 1px;
+  }
+
+  .testi-stars { color: #ffaa00; font-size: 9px; margin-left: 4px; }
+
+  .testi-text {
+    font-size: 9px; color: #888; line-height: 1.6; margin-top: 2px;
+  }
+
+  /* ══════════════════════════════
+     GUARANTEE
+  ══════════════════════════════ */
+  .guarantee {
+    margin: 14px 22px;
+    padding: 12px 14px;
+    border-left: 3px solid #cc0000;
+    background: rgba(204,0,0,0.05);
+    display: flex; align-items: center; gap: 14px;
+  }
+
+  .guarantee-icon {
+    font-size: 22px; flex-shrink: 0;
+  }
+
+  .guarantee strong {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 15px; color: #f0f0f0;
+    display: block; letter-spacing: 1px;
+  }
+
+  .guarantee span { font-size: 10px; color: #aaa; }
+
+  /* ══════════════════════════════
+     STEPS
+  ══════════════════════════════ */
+  .steps-section {
+    padding: 14px 22px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .steps {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 6px; margin-top: 10px; position: relative;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 17px; left: 10%; right: 10%;
+    height: 1px; background: rgba(255,255,255,0.07);
+  }
+
+  .step { text-align: center; }
+
+  .step-circle {
+    width: 34px; height: 34px;
+    border: 1px solid #2a2a2a;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 16px; color: #444;
+    background: #111;
+  }
+
+  .step:first-child .step-circle { border-color: #cc0000; color: #cc0000; }
+
+  .step-lbl { font-size: 7px; color: #666; letter-spacing: 1px; line-height: 1.5; }
+
+  /* ══════════════════════════════
+     PAYMENT
+  ══════════════════════════════ */
+  .payment {
+    padding: 12px 22px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .pay-label { font-size: 8px; letter-spacing: 3px; color: #555; margin-bottom: 10px; }
+
+  .pay-methods { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .pay-chip {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 12px; letter-spacing: 1px;
+    color: #bbb; border: 1px solid #2a2a2a;
+    padding: 4px 10px; background: rgba(255,255,255,0.03);
+  }
+
+  /* ══════════════════════════════
+     WA BUTTON
+  ══════════════════════════════ */
+  .wa-section { padding: 16px 22px 20px; }
+
+  .wa-btn {
+    display: block; width: 100%;
+    background: #cc0000; color: #fff; text-decoration: none;
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 22px; letter-spacing: 4px;
+    padding: 15px;
+    position: relative; overflow: hidden;
+    transition: background 0.2s;
+  }
+
+  .wa-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 2.5s infinite;
+  }
+
+  @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+
+  .wa-btn:hover { background: #aa0000; }
+
+  .wa-sub {
+    text-align: center; font-size: 8px; color: #555;
+    letter-spacing: 2px; margin-top: 8px;
+  }
+
+  /* ══════════════════════════════
+     TORN EDGE
+  ══════════════════════════════ */
+  .torn {
+    height: 10px;
+    background:
+      radial-gradient(circle at 5% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 15% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 25% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 35% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 45% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 55% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 65% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 75% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 85% 0%, rgba(14,12,12,0.97) 70%, transparent 70%),
+      radial-gradient(circle at 95% 0%, rgba(14,12,12,0.97) 70%, transparent 70%);
+    background-color: transparent;
+    background-size: 10% 100%;
+    background-repeat: no-repeat;
+    transform: rotate(180deg);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ BACKGROUND ══ -->
+<div class="bg">
+  <div class="bg-wall"></div>
+  <div class="bg-paint"></div>
+  <svg class="bg-svg" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+
+    <!-- GAME - huge left side throw-up -->
+    <text x="-20" y="330" font-family="Arial Black,sans-serif" font-size="200" font-weight="900"
+      fill="none" stroke="#e63000" stroke-width="9" opacity="0.75" transform="rotate(-9,-20,330)">GAME</text>
+    <text x="-20" y="330" font-family="Arial Black,sans-serif" font-size="200" font-weight="900"
+      fill="#c02800" opacity="0.35" transform="rotate(-9,-20,330)">GAME</text>
+    <!-- outline double -->
+    <text x="-16" y="326" font-family="Arial Black,sans-serif" font-size="200" font-weight="900"
+      fill="none" stroke="#ff8800" stroke-width="3" opacity="0.2" transform="rotate(-9,-20,330)">GAME</text>
+
+    <!-- ON TOP - right -->
+    <text x="430" y="440" font-family="Arial Black,sans-serif" font-size="120" font-weight="900"
+      fill="none" stroke="#ffaa00" stroke-width="6" opacity="0.65" transform="rotate(7,430,440)">ON TOP</text>
+    <text x="430" y="440" font-family="Arial Black,sans-serif" font-size="120" font-weight="900"
+      fill="#d08000" opacity="0.3" transform="rotate(7,430,440)">ON TOP</text>
+
+    <!-- LEGIT bottom -->
+    <text x="300" y="570" font-family="Arial Black,sans-serif" font-size="80" font-weight="900"
+      fill="none" stroke="#00cc66" stroke-width="5" opacity="0.5" transform="rotate(-4,300,570)">LEGIT</text>
+    <text x="300" y="570" font-family="Arial Black,sans-serif" font-size="80" font-weight="900"
+      fill="#009944" opacity="0.2" transform="rotate(-4,300,570)">LEGIT</text>
+
+    <!-- RML circle tag -->
+    <circle cx="820" cy="130" r="55" fill="none" stroke="#3388ff" stroke-width="5" opacity="0.45"/>
+    <circle cx="820" cy="130" r="48" fill="none" stroke="#3388ff" stroke-width="1.5" opacity="0.2"/>
+    <text x="793" y="138" font-family="Arial Black,sans-serif" font-size="20" font-weight="900"
+      fill="#3388ff" opacity="0.55">RML</text>
+
+    <!-- WILD tag top right -->
+    <text x="580" y="80" font-family="Arial Black,sans-serif" font-size="50" font-weight="900"
+      fill="none" stroke="#ff44cc" stroke-width="4" opacity="0.5" transform="rotate(4,580,80)">WILD</text>
+    <text x="580" y="80" font-family="Arial Black,sans-serif" font-size="50" font-weight="900"
+      fill="#cc2299" opacity="0.2" transform="rotate(4,580,80)">WILD</text>
+
+    <!-- Small tags scattered -->
+    <text x="50" y="70" font-family="Arial Black,sans-serif" font-size="22" font-weight="900"
+      fill="#44aaff" opacity="0.5" transform="rotate(-6,50,70)">STR8</text>
+    <text x="750" y="310" font-family="Arial Black,sans-serif" font-size="18" font-weight="900"
+      fill="#ff6644" opacity="0.45" transform="rotate(8,750,310)">NVR L8</text>
+    <text x="100" y="490" font-family="Arial Black,sans-serif" font-size="24" font-weight="900"
+      fill="#ffcc00" opacity="0.4" transform="rotate(-3,100,490)">RLY</text>
+    <text x="680" y="540" font-family="Arial Black,sans-serif" font-size="16" font-weight="900"
+      fill="#44ffcc" opacity="0.4" transform="rotate(5,680,540)">GG WP</text>
+
+    <!-- Arrow scribbles -->
+    <path d="M760 200 Q790 180 810 210 L800 203 M810 210 L803 198" fill="none" stroke="#ff4444" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+    <path d="M90 380 Q120 400 110 430 L104 420 M110 430 L118 422" fill="none" stroke="#44ffcc" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>
+
+    <!-- Paint drips -->
+    <path d="M210 0 Q213 35 208 70 Q214 100 210 140 Q213 155 210 180" fill="none" stroke="#cc0000" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    <ellipse cx="210" cy="185" rx="5" ry="8" fill="#cc0000" opacity="0.4"/>
+
+    <path d="M660 0 Q663 25 657 55 Q665 75 660 110" fill="none" stroke="#ff6600" stroke-width="3.5" stroke-linecap="round" opacity="0.45"/>
+    <ellipse cx="660" cy="115" rx="4" ry="6" fill="#ff6600" opacity="0.35"/>
+
+    <path d="M840 0 Q842 20 838 50 Q845 65 840 90" fill="none" stroke="#cc0000" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+
+    <path d="M350 0 Q352 15 349 35" fill="none" stroke="#ffaa00" stroke-width="3" stroke-linecap="round" opacity="0.35"/>
+
+    <!-- Splatter cluster 1 -->
+    <circle cx="420" cy="110" r="5" fill="#ff3300" opacity="0.55"/>
+    <circle cx="432" cy="103" r="2.5" fill="#ff3300" opacity="0.45"/>
+    <circle cx="412" cy="120" r="3" fill="#ff3300" opacity="0.4"/>
+    <circle cx="440" cy="115" r="2" fill="#ff3300" opacity="0.35"/>
+    <circle cx="415" cy="98" r="1.5" fill="#ff3300" opacity="0.3"/>
+
+    <!-- Splatter cluster 2 -->
+    <circle cx="700" cy="380" r="4" fill="#ffaa00" opacity="0.4"/>
+    <circle cx="712" cy="373" r="2" fill="#ffaa00" opacity="0.35"/>
+    <circle cx="694" cy="390" r="3" fill="#ffaa00" opacity="0.3"/>
+
+    <!-- Star -->
+    <polygon points="860,490 867,510 888,510 872,522 878,543 860,530 842,543 848,522 832,510 853,510"
+      fill="#ff6600" opacity="0.45"/>
+
+    <!-- Hatch marks decoration -->
+    <g stroke="#3388ff" stroke-width="2" opacity="0.2">
+      <line x1="0" y1="540" x2="30" y2="560"/>
+      <line x1="12" y1="540" x2="42" y2="560"/>
+      <line x1="24" y1="540" x2="54" y2="560"/>
+      <line x1="36" y1="540" x2="66" y2="560"/>
+    </g>
+    <g stroke="#cc0000" stroke-width="2" opacity="0.2">
+      <line x1="860" y1="380" x2="890" y2="400"/>
+      <line x1="872" y1="380" x2="902" y2="400"/>
+    </g>
+  </svg>
+  <div class="bg-overlay"></div>
+</div>
+
+<!-- ══ CARD ══ -->
+<div class="card-wrap">
+  <!-- Sticky top -->
+  <div class="card-sticky">
+    <div class="tape"></div>
+    <div class="header">
+      <div class="stamp"><div class="stamp-text">REAL<br>AIM LEGIT</div></div>
+      <div class="logo">REMALL SHOP</div>
+      <div class="sub">PricleList All Settings ·</div>
+    </div>
+    <div class="urgency">
+      <div class="urgency-text">AIM LEGIT·&lt;</div>
+      <div class="urgency-dot"></div>
+    </div>
+  </div>
+
+  <!-- Scrollable body -->
+  <div class="card-scroll" id="scrollBody">
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">50+</div>
+        <div class="stat-lbl">PEMBELI</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">100%</div>
+        <div class="stat-lbl">GARANSI</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">&lt;1J</div>
+        <div class="stat-lbl">RESPONSE</div>
+      </div>
+    </div>
+
+    <!-- ANDROID -->
+    <div class="divider"><div class="divider-label">ANDROID SETTINGS</div><div class="divider-line"></div></div>
+    <div class="section">
+      <div class="product">
+        <div class="prod-row">
+          <div class="prod-name">DRAG HEADSHOT</div>
+          <div class="price-tag">Rp11.000</div>
+        </div>
+        <div class="prod-desc">Drag lebih Enteng, Aim lebih mudah Headshot.</div>
+        <div class="prod-tags">
+          <span class="tag">ALL DEVICE</span>
+          <span class="tag">INSTANT</span>
+          <span class="tag">FREE CARA PASANG</span>
+        </div>
+      </div>
+      <div class="product">
+        <div class="prod-row">
+          <div class="prod-name">BODY LOCK</div>
+          <div class="price-tag">Rp5.000</div>
+        </div>
+        <div class="prod-desc">Aim & Crosshair Lengket ke Badan.</div>
+        <div class="prod-tags">
+          <span class="tag">ALL DEVICE</span>
+          <span class="tag">INSTANT</span>
+          <span class="tag">FREE CARA PASANG</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- IPHONE -->
+    <div class="divider"><div class="divider-label">iOS PROXY/SET</div><div class="divider-line"></div></div>
+    <div class="section">
+      <div class="product">
+        <div class="prod-row">
+          <div class="prod-name">iOS CONFIG <span class="coming-badge">SOON</span></div>
+        </div>
+        <div class="prod-desc">DM sekarang buat masuk waiting list. Dapat notif duluan pas ready.</div>
+      </div>
+    </div>
+
+    <!-- TESTI -->
+    <div class="divider"><div class="divider-label">KATA MEREKA</div><div class="divider-line"></div></div>
+    <div class="testi-section">
+      <div class="testi-list">
+        <div class="testi-item">
+          <div class="testi-avatar">🎮</div>
+          <div>
+            <div class="testi-name">FarhanJagoan <span class="testi-stars">★★★★★</span></div>
+            <div class="testi-text"> aim gw jadi jauh lebih locked Worth banget harganya.</div>
+          </div>
+        </div>
+        <div class="testi-item">
+          <div class="testi-avatar">🔥</div>
+          <div>
+            <div class="testi-name">RiskyyElit <span class="testi-stars">★★★★<pan></div>
+            <div class="testi-text">Body lock nya oke, aim gw jadi lebih on point dan lengket.</div>
+          </div>
+        </div>
+        <div class="testi-item">
+          <div class="testi-avatar">⚡</div>
+          <div>
+            <div class="testi-name">danZ <span class="testi-stars">★★★★★</span></div>
+            <div class="testi-text">Respon cepet, file langsung dikirim.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUARANTEE -->
+    <div class="guarantee">
+      <div class="guarantee-icon">🛡️</div>
+      <div>
+        <strong>GARANSI 3HARI</strong>
+        <span>Gak work? DM, file akan segera diperbaiki</span>
+      </div>
+    </div>
+
+    <!-- STEPS -->
+    <div class="steps-section">
+      <div class="divider-label" style="margin-bottom:0">CARA ORDER</div>
+      <div class="steps">
+        <div class="step"><div class="step-circle">1</div><div class="step-lbl">DM WA</div></div>
+        <div class="step"><div class="step-circle">2</div><div class="step-lbl">KONFIRM PRODUK</div></div>
+        <div class="step"><div class="step-circle">3</div><div class="step-lbl">TRANSFER</div></div>
+        <div class="step"><div class="step-circle">4</div><div class="step-lbl">FILE DIKIRIM</div></div>
+      </div>
+    </div>
+
+    <!-- PAYMENT -->
+    <div class="payment">
+      <div class="pay-label">// METODE PEMBAYARAN</div>
+      <div class="pay-methods">
+        <div class="pay-chip">DANA</div>
+        <div class="pay-chip">GOPAY</div>
+        <div class="pay-chip">QRIS</div>
+      </div>
+    </div>
+
+    <!-- WA BUTTON -->
+    <div class="wa-section">
+      <a href="https://wa.me/+6287785253399" class="wa-btn">📲 ORDER SEKARANG</a>
+      <div class="wa-sub">+62 877-8525-3399 · FAST RESPONSE</div>
+    </div>
+
+    <div class="torn"></div>
+  </div>
+
+  <!-- Scroll hint -->
+  <div class="scroll-hint"><span>▼ SCROLL</span></div>
+</div>
+
+<script>
+  const body = document.getElementById('scrollBody');
+  const hint = document.querySelector('.scroll-hint');
+  body.addEventListener('scroll', () => {
+    if (body.scrollTop > 30) hint.style.opacity = '0';
+    else hint.style.opacity = '1';
+  });
+</script>
+
+</body>
+</html>
